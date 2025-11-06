@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoPeace — Interactive Experience</title>
+
+  <!-- Google Font (optional, widely available) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #0f1720;
+      --card: rgba(255,255,255,0.06);
+      --accent: #56c596;
+      --accent-2: #7dd3fc;
+      --glass: rgba(255,255,255,0.06);
+      --text: #e6eef3;
+      --muted: #9db0bf;
+      --success: #7dd36b;
+    }
+    [data-theme="light"]{
+      --bg: #f6fbfa;
+      --card: rgba(10,20,10,0.03);
+      --accent: #2a8f6b;
+      --accent-2: #0ea5e9;
+      --glass: rgba(0,0,0,0.03);
+      --text: #082023;
+      --muted: #4b6670;
+      --success: #2f9e46;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 800px at 10% 10%, rgba(86,197,150,0.06), transparent),
+                  linear-gradient(180deg,var(--bg), color-mix(in srgb, var(--bg) 80%, black 10%));
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+      scroll-behavior:smooth;
+    }
+
+    header{
+      position:fixed; top:12px; left:12px; right:12px;
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 18px; gap:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border-radius:14px;
+      backdrop-filter: blur(8px) saturate(1.1);
+      z-index:1000;
+      box-shadow: 0 6px 24px rgba(2,6,23,0.45);
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+    }
+    .logo{
+      width:44px; height:44px; border-radius:10px;
+      display:grid; place-items:center; font-weight:700;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      color:white; box-shadow: 0 6px 18px rgba(10,10,10,0.25);
+    }
+    .brand h1{font-size:1rem; margin:0; letter-spacing:0.2px}
+    .controls{display:flex; gap:10px; align-items:center}
+    button.control{
+      border:0; background:var(--card); color:var(--text);
+      padding:8px 12px; border-radius:10px; font-weight:600; cursor:pointer;
+    }
+    button.control:focus{outline:2px solid color-mix(in srgb, var(--accent) 60%, transparent);}
+
+    /* HERO - Canvas Globe Fullscreen */
+    .hero{
+      height:100vh; width:100%;
+      display:grid; place-items:center; position:relative; overflow:hidden;
+    }
+    canvas#globe{
+      width:100%; height:100%; display:block;
+    }
+    .hero-overlay{
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      max-width:1100px; width:92%;
+      display:flex; gap:24px; align-items:center; justify-content:space-between;
+      padding:28px; border-radius:18px; background:linear-gradient(180deg,var(--glass), rgba(255,255,255,0.02));
+      backdrop-filter: blur(8px) saturate(1.1); box-shadow:0 10px 40px rgba(2,6,23,0.5);
+    }
+    .hero-left{max-width:60%}
+    .hero-left h2{margin:0; font-size:2rem; line-height:1.05; color:var(--text)}
+    .hero-left p{color:var(--muted); margin-top:10px; font-size:1rem}
+    .hero-actions{display:flex; gap:10px; margin-top:18px}
+    .btn-primary{
+      background:linear-gradient(90deg,var(--accent),var(--accent-2)); border:0; color:white;
+      padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer;
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 30%, black);
+    }
+    .btn-ghost{background:transparent; border:1px solid rgba(255,255,255,0.06); padding:8px 12px; border-radius:12px; color:var(--text); cursor:pointer}
+
+    /* Info cards under hero */
+    .stats-row{
+      position:absolute; left:50%; bottom:38px; transform:translateX(-50%);
+      display:flex; gap:14px; z-index:30; width:min(1100px,92%);
+    }
+    .stat{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+      padding:12px 18px; border-radius:12px; min-width:160px; text-align:left;
+      backdrop-filter: blur(6px);
+    }
+    .stat h3{margin:0; font-size:1.3rem; color:var(--accent); letter-spacing:0.6px}
+    .stat p{margin-top:6px; color:var(--muted); font-size:0.9rem}
+
+    /* Sections full-screen */
+    main section{
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding:80px 6%;
+    }
+    .panel{
+      width:100%; max-width:1200px; display:grid; grid-template-columns:1fr 420px; gap:36px; align-items:start;
+    }
+    .panel .content h2{margin:0 0 12px 0; color:var(--accent)}
+    .panel .content p{color:var(--muted); line-height:1.7}
+    .panel .side{
+      background:var(--card); padding:20px; border-radius:14px; min-height:320px;
+    }
+
+    /* Timeline */
+    .timeline{
+      display:flex; flex-direction:column; gap:18px;
+    }
+    .slider{
+      width:100%; margin-top:10px;
+    }
+    input[type="range"]{width:100%}
+
+    /* Stories grid */
+    .stories-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px}
+    .story{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:16px; border-radius:12px;
+    }
+    .story h4{margin:0 0 8px 0; color:var(--accent-2)}
+    .story p{margin:0; color:var(--muted); font-size:0.95rem}
+
+    /* Contact */
+    form.contact{display:flex; flex-direction:column; gap:10px}
+    input, textarea{
+      padding:10px 12px; border-radius:10px; border:0; background:transparent; color:var(--text);
+      border:1px solid rgba(255,255,255,0.04);
+    }
+    .note{font-size:0.9rem; color:var(--muted)}
+
+    footer{
+      padding:26px 6%; text-align:center; color:var(--muted); border-top:1px solid rgba(255,255,255,0.03)
+    }
+
+    /* small screens */
+    @media (max-width:980px){
+      .hero-overlay{flex-direction:column; gap:12px; padding:18px}
+      .hero-left{max-width:100%}
+      .panel{grid-template-columns:1fr; align-items:stretch}
+      .stats-row{flex-direction:column; bottom:20px}
+    }
+  </style>
+</head>
+<body>
+
+  <header role="banner" aria-label="EcoPeace Navigation">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">EP</div>
+      <div>
+        <h1>EcoPeace</h1>
+        <div style="font-size:12px;color:var(--muted)">환경 × 평화 — Interactive Experience</div>
+      </div>
+    </div>
+
+    <div class="controls" role="navigation" aria-label="controls">
+      <button class="control" id="theme-toggle" aria-pressed="false" title="Toggle theme">테마</button>
+      <button class="control" id="plant-btn" title="Plant a Tree (Space)" aria-label="Plant a Tree">나무심기</button>
+      <button class="control" id="jump-action">참여하기</button>
+    </div>
+  </header>
+
+  <!-- HERO with Canvas Globe -->
+  <section class="hero" id="hero" aria-label="Hero: Interactive Globe">
+    <canvas id="globe" role="img" aria-label="rotating globe visualization"></canvas>
+
+    <div class="hero-overlay" aria-hidden="false">
+      <div class="hero-left">
+        <h2>지구는 우리 모두의 집입니다.<br/><span style="color:var(--muted);font-weight:500">환경과 평화는 연결되어 있습니다.</span></h2>
+        <p>EcoPeace는 환경 파괴가 사회적 갈등과 인권 문제로 이어지는 현실을 보여주고, 청소년들의 연대로 지속 가능한 길을 모색하는 인터랙티브 경험을 제공합니다.</p>
+        <div class="hero-actions">
+          <button class="btn-primary" id="start-plant">나무 심기 시작</button>
+          <button class="btn-ghost" id="learn-more">스토리 보기</button>
+        </div>
+      </div>
+
+      <aside style="width:320px" class="hero-right" aria-hidden="true">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); padding:12px; border-radius:12px; color:#022; font-weight:700;">
+            환경과 평화 인덱스
+          </div>
+          <div style="background:var(--card); padding:12px; border-radius:12px;">
+            <div style="font-size:13px; color:var(--muted)">나무 심음</div>
+            <div id="trees-count" style="font-size:20px; font-weight:700; margin-top:6px">0</div>
+          </div>
+          <div style="background:var(--card); padding:12px; border-radius:12px;">
+            <div style="font-size:13px; color:var(--muted)">대략 CO₂ 감소량</div>
+            <div id="co2-count" style="font-size:20px; font-weight:700; margin-top:6px">0.0 t</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="stats-row" aria-hidden="true">
+      <div class="stat">
+        <h3 id="global-forest">34%</h3>
+        <p>세계 숲 커버(시뮬레이션)</p>
+      </div>
+      <div class="stat">
+        <h3 id="climate-refugee">12M</h3>
+        <p>기후 난민(시뮬레이션)</p>
+      </div>
+      <div class="stat">
+        <h3 id="peace-index">72</h3>
+        <p>평화 지수(시뮬레이션)</p>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <!-- Connection Panel -->
+    <section id="connection" aria-labelledby="conn-title">
+      <div class="panel">
+        <div class="content">
+          <h2 id="conn-title">환경이 평화에 미치는 영향</h2>
+          <p>물, 식량, 자원이 부족해질 때 사회적 긴장은 증가합니다. EcoPeace는 데이터 시뮬레이션과 스토리를 통해 기후변화가 인권과 분쟁에 어떤 영향을 미치는지를 체험적으로 전달합니다.</p>
+
+          <div style="margin-top:22px" class="timeline" aria-hidden="false">
+            <label style="font-size:13px;color:var(--muted)">타임라인: <span id="year-label">2025</span></label>
+            <input type="range" id="year-slider" min="1990" max="2050" step="1" value="2025" class="slider" aria-valuemin="1990" aria-valuemax="2050" />
+            <div style="display:flex; gap:12px; margin-top:10px;">
+              <div style="flex:1; background:var(--card); padding:12px; border-radius:10px">
+                <div style="font-size:12px;color:var(--muted)">숲 면적</div>
+                <div id="forest-qty" style="font-weight:700; font-size:18px; margin-top:8px">34%</div>
+              </div>
+              <div style="flex:1; background:var(--card); padding:12px; border-radius:10px">
+                <div style="font-size:12px;color:var(--muted)">기후 난민 추정</div>
+                <div id="refugee-qty" style="font-weight:700; font-size:18px; margin-top:8px">12M</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side" aria-hidden="false">
+          <strong style="color:var(--accent)">시뮬레이션 해보기</strong>
+          <p class="note" style="margin-top:8px">타임라인을 조절하면 간단한 시나리오 기반 지표들이 변합니다. 나무를 심어 영향력을 확인해보세요.</p>
+          <div style="margin-top:12px; display:flex; gap:8px">
+            <button class="btn-primary" id="fast-forward">미래로</button>
+            <button class="btn-ghost" id="reset-sim">리셋</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Stories -->
+    <section id="stories" aria-labelledby="stories-title">
+      <div class="panel">
+        <div class="content">
+          <h2 id="stories-title">현장의 이야기들</h2>
+          <p>청소년들이 직접 진행한 프로젝트의 이야기와 인터뷰, 사진을 모아 전시합니다. 실천이 곧 교육입니다.</p>
+
+          <div class="stories-grid" style="margin-top:18px">
+            <article class="story" tabindex="0">
+              <h4>해안 정화: 작은 시작</h4>
+              <p>학생들이 해안가에서 쓰레기를 수거하며 지역 커뮤니티와 협력한 사례입니다. 지속가능한 습관은 이렇게 시작됩니다.</p>
+            </article>
+            <article class="story" tabindex="0">
+              <h4>평화의 숲 조성</h4>
+              <p>분쟁 피해 지역에 나무를 심어 생태복구와 심리적 치유를 지원한 프로젝트입니다.</p>
+            </article>
+            <article class="story" tabindex="0">
+              <h4>기후교육 워크숍</h4>
+              <p>청소년이 기획한 워크숍으로, 지역 주민과 함께 기후위기와 인권을 논의했습니다.</p>
+            </article>
+          </div>
+        </div>
+
+        <aside class="side" aria-hidden="true">
+          <strong style="color:var(--accent)">참여자 피드백</strong>
+          <div style="margin-top:8px; color:var(--muted)">"함께 나무를 심으며 진짜 변화를 느꼈어요." — 참가 학생</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Action / Planting -->
+    <section id="action" aria-labelledby="action-title">
+      <div class="panel">
+        <div class="content">
+          <h2 id="action-title">지금, 행동하세요</h2>
+          <p>여기서는 직접 ‘나무 심기’ 인터랙션으로 작은 변화를 체험할 수 있습니다. 화면의 아무 곳이나 클릭(또는 키보드 Space)하면 나무가 심어집니다. 나무는 CO₂를 줄이고 평화 지수에 긍정적 영향을 줍니다 (시뮬레이션).</p>
+
+          <div style="margin-top:18px">
+            <div class="note">키보드 단축키: <strong>Space</strong> = 나무 심기, <strong>T</strong> = 테마 토글</div>
+            <div style="height:20px"></div>
+            <div style="display:flex; gap:10px">
+              <button class="btn-primary" id="plant-quick">한번 심기</button>
+              <button class="btn-ghost" id="auto-plant">자동 심기 켜기</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side" aria-hidden="false">
+          <strong style="color:var(--accent)">연결 통계</strong>
+          <div style="margin-top:10px">
+            <div style="font-size:12px;color:var(--muted)">현 재 나무 수</div>
+            <div id="side-trees" style="font-weight:700; font-size:24px; margin-top:6px">0</div>
+            <div style="height:14px"></div>
+            <div style="font-size:12px;color:var(--muted)">평화 지수 효과</div>
+            <div id="side-peace" style="font-weight:700; font-size:20px; margin-top:6px">+0.0</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" aria-labelledby="contact-title">
+      <div class="panel">
+        <div class="content">
+          <h2 id="contact-title">함께 만들기</h2>
+          <p>프로젝트 참여, 제안, 협업 문의는 아래 폼을 이용하세요. (이 예시는 클라이언트 측 유효성 검사만 포함합니다.)</p>
+
+          <form class="contact" id="contact-form" onsubmit="return false;" aria-label="Contact form">
+            <input id="name" placeholder="이름" aria-label="이름" required />
+            <input id="email" placeholder="이메일" type="email" aria-label="이메일" required />
+            <textarea id="message" rows="4" placeholder="메시지" aria-label="메시지" required></textarea>
+            <div style="display:flex; gap:10px; align-items:center">
+              <button class="btn-primary" id="send-btn">보내기</button>
+              <div id="form-status" class="note" aria-live="polite"></div>
+            </div>
+          </form>
+        </div>
+
+        <aside class="side" aria-hidden="true">
+          <strong style="color:var(--accent)">대화의 시작</strong>
+          <p class="note" style="margin-top:8px">간단한 메시지로도 협업이 시작됩니다. 저희는 청소년의 목소리를 기다립니다.</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer role="contentinfo">
+    © 2025 EcoPeace Project · 이 홈페이지의 지적소유권은 <strong>충렬여고 1학년 1반</strong>에게 있습니다.
+  </footer>
+
+  <script>
+  /**************************************************************************
+   * Interactive behaviors:
+   * - Canvas globe with particles (simple rotating sphere projection)
+   * - Planting interaction: click/space adds trees, updates counters
+   * - Timeline slider updates simulated stats
+   * - Theme toggle, keyboard shortcuts, contact form validation
+   **************************************************************************/
+
+  (function(){
+    // ======= Utilities & State =======
+    const state = {
+      trees: 0,
+      co2Saved: 0.0,     // metric tons (simulated)
+      peaceBoost: 0.0,
+      autoPlanting:false
+    };
+
+    // DOM refs
+    const treesCount = document.getElementById('trees-count');
+    const co2Count = document.getElementById('co2-count');
+    const sideTrees = document.getElementById('side-trees');
+    const sidePeace = document.getElementById('side-peace');
+    const globalForest = document.getElementById('global-forest');
+    const climateRefugee = document.getElementById('climate-refugee');
+    const peaceIndex = document.getElementById('peace-index');
+    const yearLabel = document.getElementById('year-label');
+    const forestQty = document.getElementById('forest-qty');
+    const refugeeQty = document.getElementById('refugee-qty');
+    const slider = document.getElementById('year-slider');
+    const themeToggle = document.getElementById('theme-toggle');
+    const plantBtn = document.getElementById('plant-btn');
+    const plantQuick = document.getElementById('plant-quick');
+    const autoPlant = document.getElementById('auto-plant');
+    const fastForward = document.getElementById('fast-forward');
+    const resetSim = document.getElementById('reset-sim');
+    const jumpAction = document.getElementById('jump-action');
+
+    // ======= Canvas Globe =======
+    const canvas = document.getElementById('globe');
+    const ctx = canvas.getContext('2d', {alpha:true});
+    let W = canvas.width = innerWidth;
+    let H = canvas.height = innerHeight;
+    let particles = [];
+    let angle = 0;
+
+    function onResize(){
+      W = canvas.width = innerWidth;
+      H = canvas.height = innerHeight;
+    }
+    addEventListener('resize', onResize);
+
+    // Create particle points on sphere (latitude/longitude)
+    function initParticles(){
+      particles = [];
+      const count = 900; // number of points
+      for(let i=0;i<count;i++){
+        // distribute points on sphere
+        const u = Math.random();
+        const v = Math.random();
+        const theta = 2*Math.PI*u;
+        const phi = Math.acos(2*v-1);
+        // sphere coords
+        const x = Math.sin(phi)*Math.cos(theta);
+        const y = Math.sin(phi)*Math.sin(theta);
+        const z = Math.cos(phi);
+        particles.push({x,y,z});
+      }
+    }
+
+    function drawGlobe(){
+      ctx.clearRect(0,0,W,H);
+
+      // subtle background glow
+      const grad = ctx.createRadialGradient(W*0.7,H*0.25,10, W*0.7,H*0.25, Math.max(W,H));
+      grad.addColorStop(0, "rgba(86,197,150,0.06)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,W,H);
+
+      // rotate particles and project to 2D
+      const cx = W/2, cy = H/2;
+      const radius = Math.min(W,H)*0.28;
+      const rotY = angle * 0.9;
+      const rotX = Math.sin(angle*0.3)*0.15;
+
+      for(const p of particles){
+        // rotation matrices
+        // rotate around Y
+        const x1 = p.x*Math.cos(rotY) - p.z*Math.sin(rotY);
+        const z1 = p.x*Math.sin(rotY) + p.z*Math.cos(rotY);
+        // rotate around X
+        const y1 = p.y*Math.cos(rotX) - z1*Math.sin(rotX);
+        const z2 = p.y*Math.sin(rotX) + z1*Math.cos(rotX);
+
+        // perspective
+        const depth = (z2 + 1.5) / 2.5; // 0..1
+        const px = cx + x1 * radius;
+        const py = cy + y1 * radius * 0.9;
+
+        // color & size based on depth
+        const size = 1 + depth*2.6;
+        const alpha = 0.25 + depth*0.85;
+        ctx.beginPath();
+        // color shifts: greens and blues
+        const g = Math.floor(120 + depth*90);
+        const b = Math.floor(160 + depth*40);
+        ctx.fillStyle = `rgba(${g},${b},${180},${alpha})`;
+        ctx.arc(px,py,size,0,Math.PI*2);
+        ctx.fill();
+      }
+
+      // subtle equator ring
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(255,255,255,0.02)";
+      ctx.lineWidth = 1;
+      ctx.ellipse(cx,cy, radius*1.01, radius*0.92, 0, 0, Math.PI*2);
+      ctx.stroke();
+
+      angle += 0.0025;
+      requestAnimationFrame(drawGlobe);
+    }
+
+    // initialize
+    initParticles();
+    drawGlobe();
+
+    // ======= Planting / Trees logic =======
+    function plantTree(count=1){
+      state.trees += count;
+      // simulate co2 saved: each tree -> 0.02 t CO2 (very simplified)
+      state.co2Saved += count * 0.02;
+      // peace effect: small boost per tree
+      state.peaceBoost = Math.min(10, state.trees * 0.01);
+
+      updateUI();
+      spawnFloatingLeaf(count);
+    }
+
+    function updateUI(){
+      treesCount.textContent = state.trees;
+      co2Count.textContent = state.co2Saved.toFixed(2) + ' t';
+      sideTrees.textContent = state.trees;
+      sidePeace.textContent = '+' + state.peaceBoost.toFixed(2);
+
+      // update simulated global stats slightly influenced by number of trees
+      const baseForest = 34; // %
+      const forest = (baseForest + Math.min(8, state.trees * 0.02)).toFixed(1);
+      globalForest.textContent = forest + '%';
+      forestQty.textContent = forest + '%';
+
+      // refugees down as forest increases
+      const refugees = Math.max(4, 12 - Math.floor((forest - baseForest) * 0.6));
+      climateRefugee.textContent = refugees + 'M';
+      refugeeQty.textContent = refugees + 'M';
+
+      // peace index slightly increases
+      const peace = Math.min(100, 72 + state.peaceBoost);
+      peaceIndex.textContent = Math.round(peace);
+    }
+
+    // floating leaf animation (visual feedback)
+    function spawnFloatingLeaf(n=1){
+      // create ephemeral DOM element that floats upward
+      for(let i=0;i<n;i++){
+        const leaf = document.createElement('div');
+        leaf.textContent = '🌱';
+        leaf.style.position = 'fixed';
+        const x = Math.random()*60 + 20; // % viewport
+        leaf.style.left = x + 'vw';
+        leaf.style.bottom = '8vh';
+        leaf.style.fontSize = (12 + Math.random()*18) + 'px';
+        leaf.style.opacity = '0';
+        leaf.style.transition = 'transform 1.6s cubic-bezier(.2,.9,.3,1), opacity 0.6s linear';
+        leaf.style.zIndex = 1200;
+        document.body.appendChild(leaf);
+        requestAnimationFrame(()=>{
+          leaf.style.opacity = '1';
+          leaf.style.transform = `translateY(-30vh) translateX(${(Math.random()-0.5)*8}vw) rotate(${Math.random()*360}deg)`;
+        });
+        setTimeout(()=> leaf.style.opacity = '0', 1200);
+        setTimeout(()=> document.body.removeChild(leaf), 2200);
+      }
+    }
+
+    // ======= Timeline Simulation =======
+    function onYearChange(y){
+      yearLabel.textContent = y;
+      // simplistic model: forest decreases until 2035 then slight recovery if action
+      let forest = 34;
+      if(y < 2020) forest = 38 - (2020 - y)*0.2;
+      else if (y <= 2035) forest = 34 - (y-2020)*0.35;
+      else forest = 29 + Math.max(0, (y-2035)*0.15);
+
+      // incorporate trees planted by user as improvement
+      forest = Math.min(45, forest + Math.min(8, state.trees*0.02));
+
+      const refugees = Math.max(3, Math.round((50 - forest) * 0.25));
+      const peace = Math.max(30, Math.min(100, 70 + (forest-34)));
+
+      forestQty.textContent = forest.toFixed(1) + '%';
+      globalForest.textContent = forest.toFixed(1) + '%';
+      refugeeQty.textContent = refugees + 'M';
+      climateRefugee.textContent = refugees + 'M';
+      peaceIndex.textContent = Math.round(peace);
+    }
+
+    // ======= Theme Toggle =======
+    const root = document.documentElement;
+    let currentTheme = localStorage.getItem('eco-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark');
+    function applyTheme(theme){
+      root.setAttribute('data-theme', theme);
+      themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+      localStorage.setItem('eco-theme', theme);
+    }
+    applyTheme(currentTheme);
+
+    // ======= Events & Controls =======
+    slider.addEventListener('input', (e)=> onYearChange(e.target.value));
+    onYearChange(slider.value);
+
+    themeToggle.addEventListener('click', ()=>{
+      const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+    });
+
+    plantBtn.addEventListener('click', ()=> plantTree(1));
+    plantQuick.addEventListener('click', ()=> plantTree(1));
+    document.getElementById('start-plant').addEventListener('click', ()=> plantTree(3));
+    document.getElementById('learn-more').addEventListener('click', ()=> location.href = '#stories');
+
+    autoPlant.addEventListener('click', ()=>{
+      state.autoPlanting = !state.autoPlanting;
+      autoPlant.textContent = state.autoPlanting ? '자동 심기 끔' : '자동 심기 켜기';
+      if(state.autoPlanting) startAutoPlant();
+    });
+
+    let autoTimer = null;
+    function startAutoPlant(){
+      if(autoTimer) clearInterval(autoTimer);
+      autoTimer = setInterval(()=> {
+        plantTree(1);
+        if(!state.autoPlanting) clearInterval(autoTimer);
+      }, 1800);
+    }
+
+    fastForward.addEventListener('click', ()=>{
+      slider.value = Math.min(2050, parseInt(slider.value) + 5);
+      slider.dispatchEvent(new Event('input'));
+    });
+    resetSim.addEventListener('click', ()=>{
+      slider.value = 2025;
+      slider.dispatchEvent(new Event('input'));
+      state.trees = 0; state.co2Saved = 0; state.peaceBoost = 0; state.autoPlanting = false;
+      autoPlant.textContent = '자동 심기 켜기';
+      updateUI();
+    });
+
+    jumpAction.addEventListener('click', ()=> location.href = '#action');
+
+    // keyboard shortcuts
+    window.addEventListener('keydown', (e)=>{
+      if(e.code === 'Space'){ e.preventDefault(); plantTree(1); }
+      if(e.key.toLowerCase() === 't') { const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light'; applyTheme(next); }
+    });
+
+    // clicking on canvas or elsewhere also plants
+    document.getElementById('hero').addEventListener('click', (e)=>{
+      // avoid clicking UI controls
+      if(e.target.closest('.control') || e.target.closest('.btn')) return;
+      plantTree(1);
+    });
+
+    // contact form handling (client-side)
+    const contactForm = document.getElementById('contact-form');
+    const sendBtn = document.getElementById('send-btn');
+    const formStatus = document.getElementById('form-status');
+
+    sendBtn.addEventListener('click', ()=>{
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const msg = document.getElementById('message').value.trim();
+      if(!name || !email || !msg){ formStatus.textContent = '모든 항목을 채워주세요.'; return; }
+      // fake "send"
+      formStatus.textContent = '전송중...';
+      sendBtn.disabled = true;
+      setTimeout(()=>{
+        formStatus.textContent = '메시지 전송 완료 — 곧 연락드릴게요!';
+        document.getElementById('name').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('message').value = '';
+        sendBtn.disabled = false;
+      }, 900);
+    });
+
+    // small accessibility: focus highlight for story cards
+    document.querySelectorAll('.story').forEach(s => s.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' ') s.style.outline = '2px solid rgba(125,211,252,0.2)';
+    }));
+
+    // IntersectionObserver for reveal animations (progressive)
+    const io = new IntersectionObserver((entries)=> {
+      entries.forEach(ent => {
+        if(ent.isIntersecting) ent.target.style.transform = 'translateY(0)', ent.target.style.opacity = '1';
+      });
+    }, {threshold:0.12});
+    document.querySelectorAll('main section').forEach(sec=>{
+      sec.style.opacity = '0'; sec.style.transform = 'translateY(28px)'; sec.style.transition = 'opacity .8s ease, transform .8s ease';
+      io.observe(sec);
+    });
+
+    // Initial UI update
+    updateUI();
+
+    // Quick safeguard: Resize canvas to devicePixelRatio for crisper rendering
+    function adjustCanvasDPR(){
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      canvas.width = innerWidth * dpr;
+      canvas.height = innerHeight * dpr;
+      canvas.style.width = innerWidth + 'px';
+      canvas.style.height = innerHeight + 'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    adjustCanvasDPR();
+    addEventListener('resize', adjustCanvasDPR);
+
+    // Debug-check: Basic self-check to ensure key components exist
+    console.assert(canvas && ctx, 'Canvas or context missing');
+    console.assert(treesCount && co2Count, 'UI counters missing');
+
+    // End of IIFE
+  })();
+  </script>
+</body>
+</html>
